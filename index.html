@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>終活健康診断 β版</title>
+
+<style>
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+  background:#f5f2ea;
+  color:#1f2a25;
+}
+.wrap{max-width:700px;margin:auto;padding:24px 16px 60px}
+.card{
+  background:white;
+  border-radius:18px;
+  padding:20px;
+  margin-top:16px;
+  box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+.badge{
+  display:inline-block;
+  background:#dfece6;
+  color:#2f6b57;
+  padding:6px 11px;
+  border-radius:30px;
+  font-size:12px;
+  font-weight:bold;
+}
+h1{font-size:30px;line-height:1.3;margin:15px 0 8px}
+h2{font-size:20px}
+.lead,.small{color:#68736e;line-height:1.7}
+.field{margin:18px 0}
+select,button{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:12px;
+}
+select{background:white;border:1px solid #ddd;margin-top:8px}
+button{
+  border:0;
+  background:#2f6b57;
+  color:white;
+  font-weight:bold;
+  margin-top:10px;
+}
+.q{padding:18px 0;border-bottom:1px solid #eee}
+.qnum{font-size:12px;color:#2f6b57;font-weight:bold}
+.qtext{font-weight:bold;line-height:1.6;margin:6px 0 10px}
+.opt{
+  display:block;
+  padding:11px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  margin:7px 0;
+}
+.score{
+  text-align:center;
+  font-size:55px;
+  font-weight:900;
+  margin:20px 0;
+}
+.cat{margin:16px 0}
+.cathead{display:flex;justify-content:space-between;font-weight:bold}
+.barbg{height:10px;background:#eee;border-radius:10px;margin-top:7px}
+.bar{height:10px;background:#2f6b57;border-radius:10px}
+.advice{
+  padding:13px;
+  background:#f3f8f5;
+  border-left:4px solid #2f6b57;
+  margin:10px 0;
+  border-radius:8px;
+}
+.error{display:none;color:#b14b4b;font-weight:bold;margin:10px 0}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<span class="badge">匿名・約3分</span>
+
+<h1>親と自分の<br>終活健康診断</h1>
+
+<p class="lead">
+「まだ早い」と思っている今だからこそ。<br>
+お金・介護・相続・お墓など、家族でどこまで準備できているかチェックしてみませんか？
+</p>
+
+<div class="card">
+
+<h2>まず3つだけ教えてください</h2>
+
+<p class="small">
+氏名・住所・電話番号・メールアドレスは入力しません。
+</p>
+
+<div class="field">
+<b>年齢</b>
+<select id="age">
+<option value="">選択してください</option>
+<option>20代以下</option>
+<option>30代</option>
+<option>40代</option>
+<option>50代</option>
+<option>60代</option>
+<option>70代以上</option>
+</select>
+</div>
+
+<div class="field">
+<b>性別</b>
+<select id="gender">
+<option value="">選択してください</option>
+<option>男性</option>
+<option>女性</option>
+<option>その他</option>
+<option>回答しない</option>
+</select>
+</div>
+
+<div class="field">
+<b>誰の終活について答えますか？</b>
+<select id="target">
+<option value="">選択してください</option>
+<option>自分</option>
+<option>親</option>
+<option>配偶者・パートナー</option>
+<option>その他の家族</option>
+</select>
+</div>
+
+<button onclick="startQuiz()">診断をはじめる</button>
+
+<div class="error" id="profileError">
+3項目すべて選択してください
+</div>
+
+</div>
+
+
+<div class="card" id="quiz" style="display:none">
+
+<h2>20問チェック</h2>
+
+<div id="questions"></div>
+
+<div class="error" id="quizError">
+まだ答えていない質問があります
+</div>
+
+<button onclick="showResult()">診断結果を見る</button>
+
+</div>
+
+
+<div class="card" id="result" style="display:none">
+
+<h2>あなたの終活健康度</h2>
+
+<div class="score" id="score"></div>
+
+<p id="comment" class="lead"></p>
+
+<h2>分野別スコア</h2>
+
+<div id="categories"></div>
+
+<h2>まずやってみたい3つ</h2>
+
+<div id="advice"></div>
+
+<p class="small">
+※この診断は終活の準備状況を気軽に振り返るための簡易チェックです。
+法律・税務・医療・保険等の個別判断を行うものではありません。
+</p>
+
+</div>
+
+</div>
+
+
+<script>
+
+const questions=[
+
+["家族との共有","終活について家族と話したことがある"],
+["家族との共有","もしもの時に連絡してほしい人を家族が把握している"],
+
+["お金・保険","加入している生命保険・医療保険の内容を把握している"],
+["お金・保険","銀行口座やその他の資産がどこにあるか整理できている"],
+
+["相続","財産を誰にどう残したいか考えたことがある"],
+["相続","相続で家族が困りそうなことを把握している"],
+
+["介護","介護が必要になった場合どこでどう過ごしたいか考えている"],
+["介護","認知症などで判断が難しくなった場合の備えを考えている"],
+
+["葬儀","葬儀の規模や形式について希望がある"],
+["葬儀","葬儀費用についてある程度の見通しがある"],
+
+["お墓・供養","お墓・納骨・樹木葬など遺骨をどうするか考えている"],
+["お墓・供養","今あるお墓を将来誰が管理するか話している"],
+
+["実家・持ち物","家・土地・車などを将来どうするか考えている"],
+["実家・持ち物","重要書類や不要な物の整理を少しずつ進めている"],
+
+["デジタル","スマホやパソコンの重要データについて考えている"],
+["デジタル","SNS・ネット銀行・サブスクなどを把握している"],
+
+["医療・意思表示","延命治療や終末期医療について希望を考えたことがある"],
+["医療・意思表示","医療や介護についての希望を家族に伝えている"],
+
+["もしもの時","突然の入院時に家族が重要書類を見つけられる"],
+["もしもの時","もし明日何かあっても家族が何から始めればいいかある程度わかる"]
+
+];
+
+const advice={
+
+"家族との共有":
+"家族と10分だけ、もしもの時について話してみる。",
+
+"お金・保険":
+"保険・銀行口座・資産を簡単に一覧にしてみる。",
+
+"相続":
+"誰に何を残したいか一度書き出してみる。",
+
+"介護":
+"介護が必要になった時、どこで過ごしたいか考えてみる。",
+
+"葬儀":
+"葬儀の規模や形式など最低限の希望を考えてみる。",
+
+"お墓・供養":
+"お墓を誰が継ぐのか、永代供養や樹木葬も含め家族で話してみる。",
+
+"実家・持ち物":
+"重要書類の場所を決め、不要な物を少しずつ整理する。",
+
+"デジタル":
+"SNS・スマホ・ネット銀行・サブスクなどを一覧にする。",
+
+"医療・意思表示":
+"延命治療などについて自分の希望を考えてみる。",
+
+"もしもの時":
+"緊急連絡先・保険・口座・重要書類の場所を1枚にまとめる。"
+
+};
+
+
+const box=document.getElementById("questions");
+
+questions.forEach((q,i)=>{
+
+box.innerHTML+=`
+
+<div class="q">
+
+<div class="qnum">
+Q${i+1}｜${q[0]}
+</div>
+
+<div class="qtext">
+${q[1]}
+</div>
+
+<label class="opt">
+<input type="radio" name="q${i}" value="5">
+できている
+</label>
+
+<label class="opt">
+<input type="radio" name="q${i}" value="3">
+だいたいできている
+</label>
+
+<label class="opt">
+<input type="radio" name="q${i}" value="0">
+まだできていない
+</label>
+
+</div>
+
+`;
+
+});
+
+
+function startQuiz(){
+
+const age=document.getElementById("age").value;
+const gender=document.getElementById("gender").value;
+const target=document.getElementById("target").value;
+
+if(!age || !gender || !target){
+
+document.getElementById("profileError").style.display="block";
+return;
+
+}
+
+document.getElementById("profileError").style.display="none";
+
+document.getElementById("quiz").style.display="block";
+
+document.getElementById("quiz").scrollIntoView({
+behavior:"smooth"
+});
+
+}
+
+
+function showResult(){
+
+let answers=[];
+
+for(let i=0;i<questions.length;i++){
+
+const answer=document.querySelector(
+'input[name="q'+i+'"]:checked'
+);
+
+if(!answer){
+
+document.getElementById("quizError").style.display="block";
+return;
+
+}
+
+answers.push(Number(answer.value));
+
+}
+
+document.getElementById("quizError").style.display="none";
+
+const total=answers.reduce((a,b)=>a+b,0);
+
+document.getElementById("score").innerHTML=
+total+'<span style="font-size:18px"> / 100点</span>';
+
+
+let comment="";
+
+if(total>=80){
+
+comment="かなり準備が進んでいます！今の内容を家族と共有し、定期的に見直していきましょう。";
+
+}else if(total>=60){
+
+comment="あと少しで安心。弱い分野を2〜3個だけ選んで整理してみましょう。";
+
+}else if(total>=40){
+
+comment="今から整えれば十分間に合います。まずは家族との会話と情報整理から。";
+
+}else{
+
+comment="全部を一気に決める必要はありません。気になるテーマを1つ選ぶところから始めてみましょう。";
+
+}
+
+document.getElementById("comment").innerText=comment;
+
+
+let cats={};
+
+questions.forEach((q,i)=>{
+
+if(!cats[q[0]]) cats[q[0]]=[];
+
+cats[q[0]].push(answers[i]);
+
+});
+
+
+let scores=[];
+
+Object.keys(cats).forEach(cat=>{
+
+let values=cats[cat];
+
+let score=Math.round(
+values.reduce((a,b)=>a+b,0) /
+(values.length*5) *
+100
+);
+
+scores.push([cat,score]);
+
+});
+
+
+scores.sort((a,b)=>a[1]-b[1]);
+
+
+document.getElementById("categories").innerHTML=
+
+scores.map(s=>`
+
+<div class="cat">
+
+<div class="cathead">
+<span>${s[0]}</span>
+<span>${s[1]}点</span>
+</div>
+
+<div class="barbg">
+<div class="bar" style="width:${s[1]}%"></div>
+</div>
+
+</div>
+
+`).join("");
+
+
+document.getElementById("advice").innerHTML=
+
+scores.slice(0,3).map(s=>`
+
+<div class="advice">
+
+<b>${s[0]}</b><br>
+
+${advice[s[0]]}
+
+</div>
+
+`).join("");
+
+
+document.getElementById("result").style.display="block";
+
+document.getElementById("result").scrollIntoView({
+behavior:"smooth"
+});
+
+}
+
+</script>
+
+</body>
+</html>
